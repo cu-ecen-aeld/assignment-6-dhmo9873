@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Parameters for the scull device
+module="scull"
+device="scull"
+mode="664"
+
+# Handle the script argument (start or stop)
+case "$1" in
+  start)
+    echo "Starting scull"
+    
+    # Load the kernel module. 
+    # Try modprobe first (uses dependency database); 
+    # fallback to direct insmod from the Yocto-specific install path if modprobe fails.
+    modprobe scull || insmod /lib/modules/$(uname -r)/extra/scull.ko
+
+    # Extract the dynamic major number assigned by the kernel from /proc/devices
+    # awk searches for the line matching the module name and prints the first column (the major number)
+    major=$(awk "\$2==\"$module\" {print \$1}" /proc/devices)
+
+    # Clean up any existing stale device nodes and create four new ones (scull0-scull3)
+    # mknod arguments: name, 'c' for character device, major number, minor number (0-3)
+    rm -f /dev/${device}[0-3]
+    mknod /dev/${device}0 c $major 0
+    mknod /dev/${device}1 c $major 1
+    mknod /dev/${device}2 c $major 2
+    mknod /dev/${device}3 c $major 3
+
+    # Set ownership to the root group and apply the defined permissions (664)
+    # This allows the root user and members of the root group to read/write the device
+    chgrp root /dev/${device}[0-3]
+    chmod $mode /dev/${device}[0-3]
+    ;;
+
+  stop)
+    echo "Stopping scull"
+    
+    # Remove the kernel module from the running kernel
+    rmmod scull
+    
+    # Remove the associated device nodes from the /dev directory
+    rm -f /dev/${device}[0-3]
+    ;;
+
+  *)
+    # Display usage instructions if an invalid argument is provided
+    echo "Usage: $0 {start|stop}"
+    exit 1
+esac
+
+exit 0

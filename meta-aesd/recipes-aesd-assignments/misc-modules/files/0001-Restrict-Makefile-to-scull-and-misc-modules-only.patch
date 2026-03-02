@@ -1,0 +1,23 @@
+From cb9a87274f9d82a388486fdb2ec848dd5422f98d Mon Sep 17 00:00:00 2001
+From: dhmo9873 <dhmo9873@colorado.edu>
+Date: Sun, 1 Mar 2026 21:06:08 -0700
+Subject: [PATCH] Restrict Makefile to scull and misc-modules only
+
+---
+ Makefile | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 7b08c49..43ef572 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,8 +1,5 @@
+ 
+-SUBDIRS =  misc-progs misc-modules \
+-           skull scull scullc scullp lddbus sculld scullv shortprint simple tty \
+-	   pci usb\
+-	   sbull snull short
++subdirs := misc-modules scull
+ 
+ all: subdirs
+ 

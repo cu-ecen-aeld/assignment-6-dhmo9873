@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# Handle the script argument (start or stop) for the misc-modules
+case "$1" in
+  start)
+    echo "Starting misc-modules"
+    
+    # Load the kernel modules using insmod with absolute paths.
+    # insmod is used instead of modprobe to avoid conflicts with potential built-in 
+    # kernel drivers (specifically for the 'faulty' module).
+    insmod /lib/modules/$(uname -r)/extra/faulty.ko
+    insmod /lib/modules/$(uname -r)/extra/hello.ko
+
+    # Automated Device Node Creation for the faulty module
+    # Step 1: Query /proc/devices to find the major number dynamically assigned to "faulty"
+    major=$(awk '$2=="faulty" {print $1}' /proc/devices)
+    
+    # Step 2: If a major number was found, create the character device node
+    if [ ! -z "$major" ]; then
+        # Remove any existing node to prevent "File exists" errors
+        rm -f /dev/faulty
+        
+        # Create the node: 'c' for character device, using the retrieved major number and minor 0
+        mknod /dev/faulty c $major 0
+        
+        # Set permissions to 666 so any user can access the device for testing
+        chmod 666 /dev/faulty
+        
+        echo "Created /dev/faulty with major $major"
+    fi
+    ;;
+
+  stop)
+    echo "Stopping misc-modules"
+    
+    # Unload the kernel modules from memory
+    rmmod faulty
+    rmmod hello
+    
+    # Remove the device node to keep the /dev directory clean
+    rm -f /dev/faulty
+    ;;
+
+  *)
+    # Display usage instructions for invalid arguments
+    echo "Usage: $0 {start|stop}"
+    exit 1
+esac
+
+exit 0
